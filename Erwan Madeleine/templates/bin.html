@@ -1,0 +1,134 @@
+{% include 'header.html' %}
+         
+<script>
+         
+         // Initialize the links
+          var link = svg
+            .selectAll("line")
+            .data(data.links)
+            .enter()
+            .append("line")
+              .style("stroke", "#aaa")
+          
+         
+          // Initialize the nodes
+          var node = svg
+            .selectAll("circle")
+            .data(data.nodes)
+            .enter()
+            .append("circle")
+              // Ici a modifier pour faire varier la taille.
+              //.attr("r", function(d){return d.size; }) 
+              .attr("r", 5)
+              .style("fill", "#ED1D24")
+              
+              // rajout pour avoir le nom en mouse over
+              .on("mouseover", function(event, d) {
+                div.transition()        
+                  .duration(200)      
+                  .style("opacity", .9);
+                div.html("<b>Personnage : </b>" + d.name)
+                  .style("left", (event.pageX + 10) + "px")     
+                  .style("top", (event.pageY - 50) + "px");
+              })
+              .call(drag(simulation));
+
+
+
+
+
+
+              // Let's list the force we wanna apply on the network
+              const simulation = d3.forceSimulation(data.nodes)                 // Force algorithm is applied to data.nodes
+                  .force("link", d3.forceLink()                               // This force provides links between nodes
+                        .id(function(d) { return d.id; })                     // This provide  the id of a node
+                        .links(data.links)                                    // and this the list of links
+                  )
+                  .force("charge", d3.forceManyBody()
+                    .strength( -600 ) 
+                    .distanceMax(Math.min(width/2,height/2))
+                  )
+                  //.force("charge", d3.forceManyBody().strength( -50000    ))         // This adds repulsion between nodes. Play with the -400 for the repulsion strength
+                  .force("center", d3.forceCenter(width / 2, height / 2))     // This force attracts nodes to the center of the svg area
+                  .on("end", ticked);
+
+
+
+
+                  // This function is run at each iteration of the force algorithm, updating the nodes position.
+                  function ticked() {
+                    link
+                        .attr("x1", d => d.source.x)
+                        .attr("y1", d => d.source.y)
+                        .attr("x2", d => d.target.x)
+                        .attr("y2", d => d.target.y);
+                    
+                    node
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+                  }
+
+
+
+
+
+
+
+
+
+
+
+                  d3.select("body")
+                  .selectAll("div")
+                    .data(data.nodes)
+                  .enter().append("div")
+                    .style("font-size","x-large")
+                    .text(function(d) {return d })
+                    .on("mouseover", function(d){tooltip.text(d); return tooltip.style("visibility", "visible");})
+                      .on("mousemove", function(){return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");})
+                      .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+
+
+
+                      var tooltip = d3.select("body")
+            .append("div")
+            .style("position", "absolute")
+            .style("z-index", "10")
+            .style("visibility", "hidden")
+            //.style("background","red")
+            .data(data.nodes)
+            .text(function(d) {return "Personnage : "+d.name })
+            .on("mouseover", function(d){tooltip.text(d); return tooltip.style("visibility", "visible");})
+              .on("mousemove", function(){return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");})
+              .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+
+
+
+
+
+// Append a DIV for the tooltip
+const div = d3.select("body").append("div")
+          .attr("class", "tooltip")         
+          .style("opacity", 0);
+
+//on mouseover
+
+.on("mouseover", function(event, d) {
+                div.transition()        
+                  .duration(200)      
+                  .style("opacity", .9);
+                div.html("<b>Personnage : </b>" + d.name)
+                  .style("left", (event.pageX + 10) + "px")     
+                  .style("top", (event.pageY - 50) + "px");
+              })
+
+
+
+
+
+
+
+
+
+</script>
+      

@@ -1,0 +1,13 @@
+{% block content %}
+<form method="POST" action="{{url_for('build')}}" id="formulaire">	
+					<fieldset>
+						<select name="Personnage">
+							<option> -- Choisir un personnage -- </option>
+							{% for el in nodes %}
+							    <option value="{{ el[name] }}">{{el[name]}}</option>
+							{% endfor %}
+						</select>	
+					</fieldset>
+					<input type="submit" value="Soumettre" />
+</form>
+{% endblock %}

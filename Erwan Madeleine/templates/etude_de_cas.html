@@ -1,0 +1,134 @@
+{% include 'header.html' %}
+
+    <!-- Create a div where the graph will take place -->
+    <div id="my_dataviz"></div>
+
+ 
+
+    <script>
+
+        // set the dimensions and margins of the graph
+        var margin = {top: 10, right: 30, bottom: 30, left: 40},
+          width = 600 - margin.left - margin.right,
+          //width = 50000 - margin.left - margin.right,
+          height = 600 - margin.top - margin.bottom;
+          //height = 50000 - margin.top - margin.bottom;
+        
+
+
+        // Append a DIV for the tooltip
+        const div = d3.select("body").append("div")
+            .attr("class", "tooltip")         
+            .style("opacity", 0);
+
+      
+
+
+
+        // append the svg object to the body of the page
+        var svg = d3.select("#my_dataviz")
+        .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        
+        
+        
+        //d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_network.json").then(function( data) {
+        d3.json("{{url_for('getTest')}}").then(function(data) {
+
+          console.log(data)
+          
+          const sizeMin = 5;
+          const sizeMax = 15;
+
+
+          // Let's list the force we wanna apply on the network
+          const simulation = d3.forceSimulation(data.nodes)                 // Force algorithm is applied to data.nodes
+                  .force("link", d3.forceLink()                               // This force provides links between nodes
+                        .id(function(d) { return d.id; })                     // This provide  the id of a node
+                        .links(data.links)                                    // and this the list of links
+                  )
+                  .force("charge", d3.forceManyBody()
+                    .strength( -60 )                                         // This adds repulsion between nodes.
+                    .distanceMax(Math.min(width/2,height/2))
+                  )                    
+                  .force("center", d3.forceCenter(width / 2, height / 2))     // This force attracts nodes to the center of the svg area
+                  
+         
+
+          const link = svg.append("g")
+              .attr("stroke", "#999")
+              .attr("stroke-opacity", 0.6)
+            .selectAll("line")
+            .data(data.links)
+            .join("line")
+              .attr("stroke-width", d => Math.sqrt(d.value));
+
+          const node = svg.append("g")
+              .attr("stroke", "#fff")
+              .attr("stroke-width", 1.5)
+            .selectAll("circle")
+            .data(data.nodes)
+            .join("circle")
+              .attr("r", 10)
+              .attr("fill", "red")
+              .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag",dragged)
+                .on("end",dragended)  
+              )
+              // rajout pour avoir le nom en mouse over
+              .on("mouseover", function(event, d) {
+                div.transition()        
+                  .duration(200)      
+                  .style("opacity", .9);
+                div.html("<b>Personnage : </b>" + d.name)
+                  .style("font-size","x-large")
+                  .style("left", (event.pageX + 10) + "px")     
+                  .style("top", (event.pageY - 50) + "px");
+              });
+          
+          simulation.on("tick", () => {
+            link
+              .attr("x1", d => d.source.x)
+              .attr("y1", d => d.source.y)
+              .attr("x2", d => d.target.x)
+              .attr("y2", d => d.target.y);
+
+            node
+              .attr("cx", d => d.x)
+              .attr("cy", d => d.y);
+          });
+          
+          function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+              event.subject.fx = event.subject.x;
+              event.subject.fy = event.subject.y;
+          }
+      
+          function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+          }
+      
+          function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+              event.subject.fx = null;
+              event.subject.fy = null;
+          }  
+
+        });
+        
+        
+
+
+
+    </script>
+</body>
+
+
+

@@ -1,0 +1,42 @@
+
+
+{% block content %}
+<!Doctype html>
+<html lang="fr">
+	<head> 
+		<meta charset="utf-8" />
+		<title> {{ title }} </title>
+		<link href="{{ url_for('static', filename='css/style.css')}}" rel="stylesheet" type="text/css" media="all" />
+		<script type="text/javascript" src="https://d3js.org/d3.v6.min.js"></script>
+		
+		<!-- Load d3-cloud -->
+		<script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3.layout.cloud.js"></script>
+
+	</head>
+	<body>
+		
+		<nav id="top">
+			<ul class="menu">
+				<li><a href="{{ url_for('home') }}">Home</a></li>
+				<li><a href="{{ url_for('cloud') }}">Word Cloud</a></li>
+				<li><a href="{{ url_for('scatter') }}">Scatter</a></li>
+				<li><a href="{{ url_for('barchart') }}">Barchart</a></li>
+				<li><a href="{{ url_for('tree') }}">Treemap</a></li>
+				<li><a href="{{ url_for('force') }}">Force-directed graph</a></li>
+				<li><a href="{{ url_for('globale1')}}">Globale1</a></li>
+			</ul>
+		</nav>
+		<nav class="main">
+			<h1>{{title}}</h1>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+

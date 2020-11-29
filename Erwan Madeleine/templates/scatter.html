@@ -1,0 +1,100 @@
+{% include 'header.html' %}
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+
+<script>
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 30, left: 60},
+    width = 600 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+//Read the data
+d3.csv("{{url_for('getData')}}").then(function(data){
+
+  // Add X axis
+  var x = d3.scaleLinear()
+    .domain([0, 4000])
+    .range([ 0, width ]);
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
+	
+	// Label for X axis
+	svg.append("text")
+	.attr("transform",
+            "translate(" + (width/2) + " ," + 
+                           (height + margin.top + 20) + ")")
+    .style("text-anchor", "middle")
+    .text("Nombre de relations");
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([0, 500])
+    .range([ height, 0]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+	
+	// text label for the y axis
+  svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 - margin.left)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Nombre d'amis"); 
+	  
+	//add line x=y
+	//chart.append('line')
+    //.attr('x1',0)
+    //.attr('x2',100)
+    //.attr('y1',0)
+    //.attr('y2',100)
+
+  // Add dots
+  svg.append('g')
+    .selectAll("dot")
+    .data(data)
+    .enter()
+    .append("circle")
+      .attr("cx", function (d) { return x(d.nb_relat); } )
+      .attr("cy", function (d) { return y(d.nb_amis); } )
+      .attr("r", 1.5)
+      .style("fill", "#69b3a2")
+	  
+
+})
+
+</script>
+<p>
+Le nombre d'amis représente le nombre de personnages différents avec 
+lesquels le personnage auquel on s'intéresse apparaît dans les comics.
+C'est donc le nombre de personnages qu'il croise, sans compter les doublons.
+</p>
+<p>
+Le nombre de relations d'un personnage est, au contraire, le nombre de fois 
+qu'il va croiser un personnage dans un comic. Là, on compte bien les doublons.
+</p>
+<p>
+Chaque point représente un personnage. Son abscisse est son nombre de relations
+tandis que son ordonnée est son nombre d'amis. Un point ne peut donc pas 
+être au dessus de la droite x=y.
+</p>
+<p>
+Plus un personnage se situe proche de la droite x=y et moins il croise souvent les mêmes personnages.
+S'il est sur la droite x=y alors il ne croise jamais deux fois le même
+personnage. Les personnages "solitaires" se trouvent donc proches de la droite x=y.
+</p>
+<p>
+A l'inverse, plus il s'en éloigne et plus il croise souvent les mêmes personnages.
+Les personnages "fidèles" à leurs amis se trouvent donc proches de l'axe des abscisses.
+</p>
