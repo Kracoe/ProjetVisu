@@ -43,6 +43,19 @@ def graphe_marvel_sans_comics(g):
 
     return dico_nodes
 
+def graphe_heros_sans_comics(g):
+
+    dico_nodes = {}
+    picon = g.getStringProperty("viewIcon")
+    for n in g.getNodes():
+        if(picon[n]=="md-human"): #Normalement on est certain que toutes les nodes sont des personnages
+            dico_nodes[n] = []
+            neigh = g.getInOutNodes(n) # On récupère tous les heros voisins de n
+            for v in neigh :
+                if( ( v not in dico_nodes[n] ) and (v != n) ):
+                        dico_nodes[n].append(v)
+    return dico_nodes
+
 
 def graphe_marvel_avec_comics(g):
     #Cette fonction prend le graphe marvel et renvoie un dictionnaire 
@@ -60,7 +73,7 @@ def graphe_marvel_avec_comics(g):
     return(dico_nodes)
 
 
-def creation_nodes(plabel,dico_nodes):
+def creation_nodes(plabel,dico_nodes,color):
     #Cette fonction prend dico_nodes en argument. 
     #On veut ici créer la liste de dictionnaire que l'on renverra au html
     #Il faut donc donner les proprietes nécessaires a nos nodes
@@ -72,9 +85,9 @@ def creation_nodes(plabel,dico_nodes):
     id = 0
     for n in dico_nodes.keys():
         nodes_id[n] = id
-        nodes.append( { "id" : id , "name" : plabel[n], "size" : 5} )
+        nodes.append( { "id" : id , "name" : plabel[n], "size" : 5,"color" : list(color[n]) } )
         id = id + 1
-
+    
     return(nodes,nodes_id)
 
 
@@ -86,15 +99,32 @@ def liens(dico_nodes,nodes_id):
     # Chaque dictionnaire a une source et une cible, les valeurs de ces cles sont les id des nodes qui composent l'arête. 
     
     links = []
-    for el in dico_nodes.keys() : #on fait un parcours sur les clés du dictionnaire dico_nodes
-        id_source = nodes_id[el]
-        for neigh in dico_nodes[el] :
-            id_target = nodes_id[neigh]
-            links.append( { "source" : id_source , "target" : id_target } )
+    aretes = {} #dictionnaire dont la clé est une node la valeur est la liste des aretes pour lequelles cette node est source 
+    for source in dico_nodes.keys() : #on fait un parcours sur les clés du dictionnaire dico_nodes
+        id_source = nodes_id[source]
+        aretes[source] = []
+        for target in dico_nodes[source] :
+            
+            id_target = nodes_id[target]
+            #on veut vérifier qu'il n'existe pas d'arête de target vers source avant d'en creer une de source vers target. 
+
+            if(target in aretes.keys()):
+                # On verifie que target est bien dans les cles du dictionnaire
+                # Si c'est bien le cas, on s'assure qu'il n'existe pas d'arete de target vers source
+                if( source not in aretes[target]):  
+                    links.append( { "source" : id_source , "target" : id_target } ) # On ajoute l'arete allant de source vers target a notre liste
+                    aretes[source].append(target) # On ajoute target à la liste des aretes pour lesquelles source est l'arete source. 
+            else: 
+                # Target n'est pas dans les cles du dictionnaire, donc il ne peut pas exister d'arete de target vers source
+                # On peut ainsi creer une arete de source vers target
+
+                links.append( { "source" : id_source , "target" : id_target } ) # On ajoute l'arete allant de source vers target a notre liste
+                aretes[source].append(target) # On ajoute target à la liste des aretes pour lesquelles source est l'arete source. 
+
     return(links)
 
 
-
+### Inutile
 def liens2(dico_nodes,nodes_id,nodes):
     # Cette fonction prend en parametre dico_nodes (le dictonnaire dont les cles sont les nodes et les valeurs les heros voisins de ces nodes)
     # Ainsi que nodes_id qui est un dictionnaire regroupant les identifiants de toutes les nodes
@@ -109,8 +139,6 @@ def liens2(dico_nodes,nodes_id,nodes):
             links.append( { "source" : id_source , "target" : id_target } )
         nodes[id_source]["size"] = len(dico_nodes[el])
     return(links)
-
-
 
 
 def suppression_node(dico_nodes,nodes_id,links, node_personnage):
@@ -130,7 +158,11 @@ def suppression_node(dico_nodes,nodes_id,links, node_personnage):
             links_sans_pers.append(el)
     return(dico_nodes,links_sans_pers)
 
-
+def set_size(nodes,nodes_id,dico_nodes):
+    for el in dico_nodes.keys() : #on fait un parcours sur les clés du dictionnaire dico_nodes
+        id_source = nodes_id[el]
+        nodes[id_source]["size"] = len(dico_nodes[el])
+    return(nodes)
 
 def graphe_marvel_tulip():
     g = tlp.loadGraph('marvel.tlpb')
@@ -150,14 +182,14 @@ def graphe_marvel_tulip():
                     if(tlp.edge.isValid(edge_x_y) or tlp.edge.isValid(edge_y_x)): # On regarde si une des 2 edge existe 
                         if(tlp.edge.isValid(edge_x_y)): #Cas 1 l'arête de x vers y existe
                             heroes_dict =tlp.Graph.getEdgePropertiesValues(g,edge_x_y)
-                            heroes_dict['value']+=1 # On augmente le poids de l'arête de 1 
+                            heroes_dict['poids']+=1 # On augmente le poids de l'arête de 1 
                             tlp.Graph.setEdgePropertiesValues(g,edge_x_y,heroes_dict)
                         if(tlp.edge.isValid(edge_y_x)): #Cas 2 l'arête de y vers x existe 
                             heroes_dict =tlp.Graph.getEdgePropertiesValues(g,edge_y_x)
-                            heroes_dict['value']+=1 # On augmente le poids de l'arête de 1 
+                            heroes_dict['poids']+=1 # On augmente le poids de l'arête de 1 
                             tlp.Graph.setEdgePropertiesValues(g,edge_y_x,heroes_dict)
                     else: 
-                        tlp.Graph.addEdge(g,x, y,{"value" : 1}) # On crée l'arête et on initialise son poids à 1
+                        tlp.Graph.addEdge(g,x, y,{"poids" : 1}) # On crée l'arête et on initialise son poids à 1
                 counter+=1
             tlp.Graph.delNode(g,n)
     tlp.saveGraph(g,"heroes.tlpb")
@@ -210,10 +242,93 @@ def get_node_from_char(g,personnage):
     return(nodes_id,node_personnage)
 
 
+def nettoyage(g,nombre):
+    metricprop = g.getDoubleProperty("viewMetric")
+    g.applyDoubleAlgorithm('Degree')
+    for n in g.getNodes():
+        if(metricprop[n]<nombre ):
+            g.delNode(n)
+    return(g)
 
+def echelle_couleur():
+    # On crée la liste des couleurs optimales 
+    # On se base sur le site suivant 
+    # https://colorbrewer2.org/#type=qualitative&scheme=Paired&n=12
+    colors = []
+    colors.append(tlp.Color(166,206,227))
+    colors.append(tlp.Color(251,154,153))
+    colors.append(tlp.Color(177,89,40))
+    colors.append(tlp.Color(51,160,44))
+    colors.append(tlp.Color(202,178,214))
+    colors.append(tlp.Color(253,191,111))
+    colors.append(tlp.Color(31,120,180))
+    colors.append(tlp.Color(255,255,153))
+    colors.append(tlp.Color(227,26,28))
+    colors.append(tlp.Color(178,223,138))
+    colors.append(tlp.Color(255,127,0))
+    colors.append(tlp.Color(106,61,154))
+    return (tlp.ColorScale(colors))
 
-
-
+def tlp_color_to_hex(color):
+    if(color == list(tlp.Color(166,206,227))):
+        return("#a6cee3")
+    if(color == list(tlp.Color(251,154,153))):
+        return("#fb9a99")
+    if(color == list(tlp.Color(177,89,40))):
+        return("#b15928")
+    if(color == list(tlp.Color(51,160,44))):
+        return("#33a02c")
+    if(color == list(tlp.Color(202,178,214))):
+        return("#cab2d6")
+    if(color == list(tlp.Color(253,191,111))):
+        return("#fdbf6f")
+    if(color == list(tlp.Color(31,120,180))):
+        return("#1f78b4")
+    if(color == list(tlp.Color(255,127,0))):
+        return("#ff7f00")
+    if(color == list(tlp.Color(255,255,153))):
+        return("#ffff99")
+    if(color == list(tlp.Color(227,26,28))):
+        return("#e31a1c")
+    if(color == list(tlp.Color(178,223,138))):
+        return("#b2df8a")
+    if(color == list(tlp.Color(106,61,154))):
+        return("#6a3d9a")
+    return
+    
+def coloration(Nodes):
+    for n in Nodes :
+        community = n["communauté"]
+        # On attribue une couleur en fonction de la valeur de la communauté
+        if(community == 0):
+            n["color"]="#a6cee3"               
+        if(community == 1):
+            n["color"]="#1f78b4"
+        if(community == 2):
+            n["color"]="#b2df8a"
+        if(community == 3):
+            n["color"]="#33a02c"
+        if(community == 4):
+            n["color"]="#fdbf6f"
+        if(community == 5):
+            n["color"]="#e31a1c"
+        if(community == 6):
+            n["color"]="#fb9a99"
+        if(community == 7):
+            n["color"]="#ff7f00"
+        if(community == 8):
+            n["color"]="#cab2d6"
+        if(community == 9):
+            n["color"]="#b15928"
+        if(community == 10):
+            n["color"]="#ffff99"
+        if(community == 11):
+            n["color"]="#6a3d9a"  
+    return(Nodes)
+    
+            
+            
+            
 
 ############## ROUTES ##############
     
@@ -223,11 +338,17 @@ def home():
     global dico_nodes 
     dico_nodes = graphe_marvel_sans_comics(g) 
     plabel = g.getStringProperty("viewLabel")
+    color =  g.getColorProperty("viewColor")
     global nodes
     global nodes_id
     global links
-    (nodes,nodes_id) = creation_nodes(plabel,dico_nodes) 
+    (nodes,nodes_id) = creation_nodes(plabel,dico_nodes,color) 
     links = liens(dico_nodes,nodes_id)
+
+    # A modifier, ici on veut load le graphe une seule fois,
+    # Faire en sorte que les fonctions se basent sur le graphe
+    # g = tlp.loadGraph('heroes.tlpb')
+
     return render_template("home.html", title="Home")
 
 
@@ -288,9 +409,13 @@ def getForce():
     #dico_nodes = graphe_marvel_sans_comics(g) #Fonctionne 
     dico_nodes = graphe_marvel_sans_comics(subG) # Fonctionne
 
-    (nodes,nodes_id) = creation_nodes(plabel,dico_nodes) #Fonctionne 
-    # links = liens(dico_nodes,nodes_id)
-    links = liens2(dico_nodes,nodes_id,nodes)
+
+    color =  g.getColorProperty("viewColor")
+    (nodes,nodes_id) = creation_nodes(plabel,dico_nodes,color) #Fonctionne 
+    links = liens(dico_nodes,nodes_id)
+    
+    # Je suis pas certain qu'on veuille mapper la taille ici
+    #nodes = set_size(nodes,nodes_id,dico_nodes)
 
 
     ##### Temporaire ##### 
@@ -343,12 +468,9 @@ def getGlobale1():
     global dico_nodes
     global nodes 
     global links
-    #(nodes,nodes_id) = creation_nodes(plabel,dico_nodes) 
-    #links = liens(dico_nodes,nodes_id)
+    global nodes_id
 
-    for el in dico_nodes.keys() : #on fait un parcours sur les clés du dictionnaire dico_nodes
-        id_source = nodes_id[el]
-        nodes[id_source]["size"] = len(dico_nodes[el])
+    nodes = set_size(nodes,nodes_id,dico_nodes)
 
     
     ## Enlever les nodes sans voisins. 
@@ -365,19 +487,80 @@ def getGlobale1():
 
 @app.route("/louvain")
 def louvain():
-    return render_template("globale1.html",title="Communautés")
+    return render_template("louvain.html",title="Communautés")
 
 @app.route("/getLouvain")
 def getLouvain():
+    # On charge les données du graphe
+    g = tlp.loadGraph('heroes.tlpb')
+    plabel = g.getStringProperty("viewLabel")
+    metricprop = g.getDoubleProperty("viewMetric")
+    layout = g.getLayoutProperty("viewLayout")
+    # On réalise le nettoyage des données
+    # On ne conserve que les nodes ayant un degre suffisant
+    # Les nodes qui ont un degre trop petit ne font pas assez partie du reseau social
+    
+    g = nettoyage(g,300)
+    
+    # Ce filtrage est un peu artificiel, il nous permet de passer de 38 communautés sans filtrage 
+    # A 8 communautés après. Il est impossible de representer clairement 38 communautés avec des couleurs 
+
+    
+    #On veut faire en sorte que notre algo prenne en compte le poids des arêtes pour créer les commus
+    params = tlp.getDefaultPluginParameters('Louvain', g)
+    poids = g.getIntegerProperty("poids")
+    params['metric'] = poids
+
+    g.applyDoubleAlgorithm('Louvain',params)
+    
+    
+    # On a appliqué l'algo de Louvain a notre graphe. Dans view Metric se trouve le numero de la commu
+    # Attention, le nombre de commus ne doit pas etre plus grand que 12  
+    color_scale = echelle_couleur()    
+
+
+    params2 = tlp.getDefaultPluginParameters('Color Mapping', g)
+    params2["color scale"] = color_scale
+    color =  g.getColorProperty("viewColor")
+    
+    g.applyColorAlgorithm('Color Mapping',params2)
+    #Maintenant, on a une couleur différente pour chaque communauté 
+    
+    #On applique l'algo FM^3 (OGDF) pour dessiner le graphe en regroupant les communautés
+    g.applyLayoutAlgorithm('FM^3 (OGDF)')
+    
+    #On recupère les dictionnaires des nodes et des arêtes et on trace le graphe
+    dico_Nodes = graphe_heros_sans_comics(g)
     
 
-    g.applyDoubleAlgorithm
+    Nodes = [] #Liste de dictionnaire. On en a besoin pour tracer le graphe avec D3
+    Nodes_id = {} #nodes_id est un dictionnaire. Les cles sont les nodes. Les valeurs sont l'id de ces nodes. On cree nos propres id 
+    # nodes etant une liste, il est plus facile d'acceder a l'id des nodes stockees avec dictionnaire.
+    id = 0
+    for n in dico_Nodes.keys():
+        Nodes_id[n] = id
+        Nodes.append( { "id" : id , "name" : plabel[n], "size" : 5,"color" : list(color[n]),"communauté" : metricprop[n],"x" : layout[n][0],"y" :layout[n][1]  } )
+        id = id + 1
+    
+    Nodes = coloration(Nodes)
+    
+    for n in Nodes:
+        n["size"] = 50
+
+    
+    Links = liens(dico_Nodes,Nodes_id)
+
+    print("le nombre de communautés est : ",params["#communities"])
+    print("la maudularité vaut : ",params["modularity"])
+    
+    
+    # on renvoie le json 
     dico = {}
-    dico["nodes"] = nodes
-    dico["links"] = links   
+    dico["nodes"] = Nodes
+    dico["links"] = Links   
     resp = json.dumps(dico) # resp = json.dumps(nodes) + json.dumps(links)
     output = make_response(resp)
-    output.headers["Content-Disposition"] = "attachment; filename=globale1.json"
+    output.headers["Content-Disposition"] = "attachment; filename=louvain.json"
     output.headers["Content-type"] = "json"    
     return output
 
@@ -429,7 +612,8 @@ def getTest():
     # (subG,node_p) = get_graph_from_char(g,personnage)
     # plabel = g.getStringProperty("viewLabel")
     # dico_nodes = graphe_marvel_sans_comics(subG) # Fonctionne
-    # (nodes,nodes_id) = creation_nodes(plabel,dico_nodes) #Fonctionne 
+    # color =  g.getColorProperty("viewColor")
+    # (nodes,nodes_id) = creation_nodes(plabel,dico_nodes,color) #Fonctionne 
     # links = liens(dico_nodes,nodes_id)
 
     # (dico_nodes_apres_suppression, links_apres_suppression) = suppression_node(dico_nodes,nodes_id,links, node_p)
@@ -443,16 +627,22 @@ def getTest():
     # #On a effectivement perdu 1 sur len dico_nodes
     # #Il faudrait s'assurer que c'est le cas aussi dans links
 
-    global dico_nodes
-    g = tlp.loadGraph('marvel.tlpb')
+
+    
+
+    graphe_marvel_tulip()
+    g = tlp.loadGraph('heroes.tlpb')
+    tlp.saveGraph(g,"heroes.tlpx")
+
+
     plabel = g.getStringProperty("viewLabel")
 
-    (nodes,nodes_id) = creation_nodes(plabel,dico_nodes)
-
     output = ""
-    for n in dico_nodes.keys():
+    compteur = 0
+    for n in g.getNodes():
         output = output + plabel[n] + "<br>"
-
+        compteur += 1
+    print(compteur)
     return output
 
 ## Fin Route de Test ## 
@@ -661,5 +851,4 @@ def scatter():
 #NE SURTOUT PAS MODIFIER OU DEPLACER, TOUT AJOUT DE CODE DOIT ETRE EFFECTUE AU DESSUS DE CES LIGNES
 if __name__ == "__main__":
    #app.run(debug=True, host='0.0.0.0', port=5000)
-   app.run(debug=True)
-
+     app.run(debug=True)
